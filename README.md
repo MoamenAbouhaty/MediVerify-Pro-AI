@@ -1,7 +1,7 @@
 # 🛡️ MediVerify Pro
-### **Advanced Medicine Authenticity & Inventory Management System**
+### **Advanced Medicine Authenticity & AI-Powered Pharmaceutical Management System**
 
-**MediVerify Pro** is a professional Full-Stack solution (MERN Architecture) designed to combat counterfeit medicine. It empowers medical administrators to manage pharmaceutical inventory and generate unique, secure serial numbers, while providing a public portal for consumers to instantly verify product authenticity and safety status.
+**MediVerify Pro** is a professional Full-Stack solution (MERN Architecture) designed to combat counterfeit medicine. It empowers medical administrators to manage pharmaceutical inventory and generate unique, secure serial numbers, while providing a public portal for consumers to instantly verify product authenticity and safety status — backed by a real-time AI Health Advisor powered by Groq LLaMA.
 
 ---
 
@@ -9,8 +9,12 @@
 
 | Dark Mode Interface | Light Mode Interface |
 | :---: | :---: |
-| ![Dark Mode](LightMode.jpg) | ![Light Mode](DarkMode.jpg) |
-| *Premium Glassmorphism Design* | *Clean & Professional UI* |
+| ![Dark Mode](assets/DarkMode.jpg) | ![Light Mode](assets/LightMode.jpg) |
+| *Premium Particle Canvas Design* | *Clean & Professional UI* |
+
+| Dark Mode Interface | Light Mode Interface |
+| :---: | :---: |
+| ![Dark Mode](assets/DashboardDark.jpg) | ![Light Mode](assets/LightMode.jpg) |
 
 ---
 
@@ -19,24 +23,32 @@
 ### 👤 Administrative Portal (Protected)
 - **Secure Access:** Robust login/registration system using **JWT** (JSON Web Tokens) and **Bcryptjs** for password hashing.
 - **Inventory Control (CRUD):** Full management of medicine records (Create, Read, Update, Delete).
-- **Smart Serial Generation:** Utilizes **Nanoid** and **Crypto** to generate high-entropy, unique identifiers (e.g., MV-A1B2C3).
+- **Smart Serial Generation:** Utilizes **Crypto** to generate high-entropy, unique identifiers in the format `MV-XXXX-XXXX`.
 - **Live Search:** Instant client-side filtering to navigate through large medicine databases efficiently.
+- **Dashboard Stats:** Real-time counters for Total, Active, Expired, and Today's medicines.
 
 ### 🔍 Consumer Verification Engine
 - **Instant Check:** Consumers can verify product serial numbers without an account.
 - **Double-Safety Logic:** The system checks if the serial exists AND validates the **Expiry Date** to warn against outdated products.
-- **Dynamic Alerts:** High-end interactive notifications using **SweetAlert2** (Success for Authentic, Error for Fake, Warning for Expired).
+- **Dynamic Results:** Inline result cards (Authentic ✅, Expired ⚠️, Counterfeit ❌) rendered directly on the page without popups.
+- **QR Code Scanner:** Camera-based scanning using **jsQR** — consumers can scan packaging directly from their phone browser with no app required.
 
-### 🤖 AI Health Advisor *(New)*
-- **Smart Suggestions:** One-click generation of random medicine entries via the AI Health Advisor button.
-- **Auto Database Entry:** Generated medicines are instantly saved to the database with a unique serial number and expiry date.
-- **Dashboard Integration:** The medicine table and stats counter refresh automatically after each AI suggestion.
-- **Dual Entry Points:** The AI advisor button is available on both the Verify page and the Admin Dashboard.
-- **Secure Architecture:** Anthropic API key is stored server-side in `.env` and never exposed to the frontend.
+### 🤖 AI Health Advisor *(Upgraded)*
+- **Symptom Analysis Chat:** A full conversational AI chat interface where users describe symptoms and receive structured pharmaceutical guidance.
+- **Web Search Integration:** The AI uses **Brave Search API** + **Groq tool-calling** to fetch real-time, accurate medicine information before responding — not hallucinated data.
+- **Strict Medical Rules:** The AI never diagnoses, never invents drug interactions, never guesses symptoms from a medicine name, and always recommends consulting a physician.
+- **Structured Response Format:** Responses follow a fixed clinical format covering Active Ingredients, Dosage, Warnings, Drug Interactions, and When to Seek Medical Advice.
+- **Conversation History:** Multi-turn chat with session memory (last 20 messages) for contextual follow-up questions.
+- **Bulk Medicine Generator:** One-click generation of 10 verified medicines simultaneously with live progress bar and auto database entry.
+- **Quick Symptom Chips:** Pre-built shortcut buttons for common conditions (Fever, Cold, Allergy, Pain Relief, etc.).
+- **Secure Architecture:** Groq and Brave Search API keys are stored server-side in `.env` and never exposed to the frontend.
 
 ### 🎨 Visual Experience
-- **Glassmorphism UI:** Modern translucent panels with backdrop blur effects.
-- **Theme Persistence:** Automated Dark/Light mode based on user preference, saved in `localStorage`.
+- **Animated Particle Canvas:** Dynamic WebGL-style particle network rendered on an HTML5 canvas for a premium background effect.
+- **Boot Loader:** Professional animated loader screen with triple-ring spinner on startup.
+- **Theme Persistence:** Dark/Light mode toggle with smooth transitions, saved in `localStorage`.
+- **Toast Notifications:** Lightweight, non-blocking toast system replacing popup alerts.
+- **Fully Responsive:** Mobile-first layout that works on all screen sizes.
 
 ---
 
@@ -44,40 +56,36 @@
 
 | Layer | Technologies Used |
 | :--- | :--- |
-| **Frontend** | HTML5, Tailwind CSS, JavaScript (ES6+), SweetAlert2, FontAwesome 6 |
+| **Frontend** | HTML5, CSS3, JavaScript (ES6+), jsQR, Canvas API |
 | **Backend** | Node.js, Express.js |
 | **Database** | MongoDB (Mongoose ODM) |
-| **Security** | JWT, Bcryptjs, CORS |
-| **AI Integration** | Anthropic Claude API (claude-sonnet-4-20250514) |
-| **Utilities** | Nanoid (ID Generation), Dotenv, Crypto |
+| **Security** | JWT, Bcryptjs, CORS, express-rate-limit |
+| **AI Integration** | Groq SDK (llama-3.3-70b-versatile) with Tool Calling |
+| **Web Search** | Brave Search API (real-time medicine data) |
+| **Utilities** | Crypto, Dotenv |
 
 ---
 
 ## 📁 Project Structure
 
 ```text
-├── config/
-│   └── db.js                # MongoDB Connection configuration
+mediverify/
+├── app.js                   # Server entry point, middleware, rate limiting
 ├── middleware/
-│   └── authMiddleware.js     # JWT Verification & Route protection
+│   └── auth.js              # JWT verification & route protection
 ├── models/
-│   ├── Medicine.js          # Mongoose Schema for medicine records
-│   └── User.js              # Mongoose Schema for admin users
+│   ├── Medicine.js          # Mongoose schema for medicine records
+│   └── User.js              # Mongoose schema for admin users
 ├── public/
 │   ├── index.html           # Main SPA entry point
-│   ├── script.js            # Frontend logic & API integration
-│   └── style.css            # Custom CSS & Glassmorphism styling
+│   ├── script.js            # Frontend logic, QR scanner, AI chat, canvas
+│   └── style.css            # Custom CSS, dark/light theme, animations
 ├── routes/
 │   ├── authRoutes.js        # Authentication API endpoints
-│   ├── medicineRoutes.js    # Medicine CRUD & Verification endpoints
-│   └── aiRoutes.js          # AI Health Advisor endpoint (New)
-├── utils/
-│   └── errorResponse.js     # Custom Error Handling class
-├── .env                     # Environment variables (Private)
-├── .gitignore               # Files to be excluded from Git
-├── app.js                   # Server entry point & Middleware setup
-├── package.json             # Project dependencies & Scripts
-├── package-lock.json        # Locked dependency versions
+│   ├── medicineRoutes.js    # Medicine CRUD & verification endpoints
+│   └── aiRoutes.js          # AI chat (with web search) + bulk generate
+├── .env.example             # Environment variable template
+├── package.json             # Project dependencies & scripts
 └── README.md                # Project documentation
 ```
 
@@ -99,11 +107,16 @@ npm install
 ### Environment Setup:
 Create a `.env` file in the root directory:
 ```dotenv
-PORT=3001
+PORT=3000
 MONGODB_URI=your_mongodb_connection_string
-JWT_SECRET=your_super_secret_key
-ANTHROPIC_API_KEY=your_anthropic_api_key
+JWT_SECRET=your_super_secret_key_min_32_chars
+GROQ_API_KEY=your_groq_api_key
+BRAVE_SEARCH_API_KEY=your_brave_search_api_key
 ```
+
+> **Getting API Keys:**
+> - **Groq:** Free at [console.groq.com](https://console.groq.com)
+> - **Brave Search:** Free tier (2,000 req/month) at [api.search.brave.com](https://api.search.brave.com)
 
 ### Launch the system:
 ```bash
@@ -120,39 +133,58 @@ npm start
 
 ### Auth Routes — `/api/auth`
 
-| Method | Endpoint    | Description          | Auth |
-|--------|-------------|----------------------|------|
-| POST   | `/register` | Create admin account | ❌   |
-| POST   | `/login`    | Login and get token  | ❌   |
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/register` | Create admin account | ❌ |
+| POST | `/login` | Login and get token | ❌ |
 
 ### Medicine Routes — `/api/medicines`
 
-| Method | Endpoint          | Description             | Auth |
-|--------|-------------------|-------------------------|------|
-| GET    | `/all`            | Get all medicines       | ❌   |
-| GET    | `/verify/:serial` | Verify by serial number | ❌   |
-| GET    | `/:id`            | Get medicine by ID      | ❌   |
-| POST   | `/add`            | Add new medicine        | ✅   |
-| PUT    | `/update/:id`     | Update medicine details | ✅   |
-| DELETE | `/delete/:id`     | Delete a medicine       | ✅   |
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/all` | Get all medicines | ❌ |
+| GET | `/verify/:serial` | Verify by serial number | ❌ |
+| GET | `/:id` | Get medicine by ID | ❌ |
+| POST | `/add` | Add new medicine | ✅ |
+| PUT | `/update/:id` | Update medicine details | ✅ |
+| DELETE | `/delete/:id` | Delete a medicine | ✅ |
 
-### AI Routes — `/api/ai` *(New)*
+### AI Routes — `/api/ai`
 
-| Method | Endpoint   | Description                                | Auth |
-|--------|------------|--------------------------------------------|------|
-| POST   | `/suggest` | Generate & save a random AI medicine entry | ❌   |
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/chat` | AI symptom analysis with web search | ❌ |
+| POST | `/suggest` | Generate & save one medicine entry | ❌ |
 
 ---
 
 ## 🔒 Reliability & Performance
 
+🟢 **Rate Limiting:** Global 200 req/15min + AI-specific 20 req/min to prevent abuse and protect API quotas.
+
+🟢 **JWT Route Protection:** All write operations (add, update, delete) require a valid admin token.
+
 🟠 **CORS Enabled:** Cross-Origin Resource Sharing configured for secure frontend-backend communication.
 
-🟢 **Centralized Error Handling:** Standardized API responses for every possible error scenario using a custom `ErrorResponse` class.
+🟢 **Real-Time AI Data:** Web search tool-calling ensures medicine information is fetched from live sources, not AI memory.
 
-🟠 **Efficient ID Generation:** Using **Crypto** for collision-resistant serial numbers in the format `MV-XXXXXX`.
+🟠 **Graceful Fallback:** If Brave Search is unavailable, the AI falls back to its internal knowledge without crashing.
 
-🟢 **Secure API Keys:** The Anthropic API key is stored server-side in `.env` and never exposed to the frontend.
+🟢 **Collision-Resistant Serials:** Crypto-based serial generation with uniqueness retry loop — format `MV-XXXX-XXXX`.
+
+🟢 **Secure API Keys:** All API keys stored server-side in `.env` and never exposed to the frontend.
+
+---
+
+## 🏆 Hackathon Highlights
+
+| Real-World Problem | MediVerify Solution |
+|---|---|
+| 1M+ deaths annually from fake medicine (WHO) | Real-time serial authentication in 3 seconds |
+| No fast consumer verification tool | QR camera scan — no app required |
+| AI advisors hallucinate medicine data | Web search tool-calling for verified info |
+| Manual, slow medicine registry | Bulk generate 10 medicines in one click |
+| AI chat with no context | Multi-turn conversation with session history |
 
 ---
 

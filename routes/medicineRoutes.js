@@ -1,13 +1,13 @@
-const router = require("express").Router();
-const Medicine = require("../models/Medicine");
-const crypto = require("crypto");
+const router = require('express').Router();
+const Medicine = require('../models/Medicine');
+const { protect } = require('../middleware/auth');
+const crypto = require('crypto');
 
-// ==========================================
-// [GET] Routes - Fetching Data
-// ==========================================
+function generateSerial() {
+  return 'MV-' + crypto.randomBytes(2).toString('hex').toUpperCase() + '-' + crypto.randomBytes(2).toString('hex').toUpperCase();
+}
 
-// 1. Get all medicines (Sorted by newest first)
-router.get("/all", async (req, res) => {
+router.get('/all', async (req, res) => {
   try {
     const meds = await Medicine.find().sort({ createdAt: -1 });
     res.json({ success: true, data: meds });
@@ -16,101 +16,62 @@ router.get("/all", async (req, res) => {
   }
 });
 
-// 2. Get a specific medicine by its Database ID
-router.get("/:id", async (req, res) => {
+router.get('/verify/:serial', async (req, res) => {
+  try {
+    const medicine = await Medicine.findOne({ serialNumber: req.params.serial.toUpperCase() });
+    if (medicine) {
+      res.json({ success: true, data: medicine });
+    } else {
+      res.status(404).json({ success: false, message: 'Serial not found' });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.get('/:id', async (req, res) => {
   try {
     const medicine = await Medicine.findById(req.params.id);
-
-    if (!medicine) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Medicine not found" });
-    }
-
+    if (!medicine) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, data: medicine });
   } catch (err) {
-    // Handles invalid ObjectId format
-    res
-      .status(500)
-      .json({ success: false, message: "Invalid ID format or server error" });
-  }
-});
-
-// 3. Verify medicine via Serial Number
-router.get("/verify/:serial", async (req, res) => {
-  try {
-    const { serial } = req.params;
-    const medicine = await Medicine.findOne({
-      serialNumber: serial.toUpperCase(),
-    });
-
-    if (medicine) {
-      return res.json({ success: true, data: medicine });
-    } else {
-      return res
-        .status(404)
-        .json({ success: false, message: "Serial number not found" });
-    }
-  } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// ==========================================
-// [POST] Routes - Creating Data
-// ==========================================
-
-// 4. Add a new medicine
-router.post("/add", async (req, res) => {
+router.post('/add', protect, async (req, res) => {
   try {
     const { name, brand, expiryDate, description } = req.body;
-
-    // Generate a unique Serial Number (e.g., MV-A1B2C3)
-    const serialNumber =
-      "MV-" + crypto.randomBytes(3).toString("hex").toUpperCase();
-
-    const newMed = await Medicine.create({
-      name,
-      brand,
-      expiryDate,
-      description,
-      serialNumber,
-    });
-
-    res.status(201).json({ success: true, data: newMed });
+    if (!name || !expiryDate) {
+      return res.status(400).json({ success: false, message: 'Name and expiry date required' });
+    }
+    let serialNumber = generateSerial();
+    let tries = 0;
+    while (await Medicine.findOne({ serialNumber }) && tries < 10) {
+      serialNumber = generateSerial();
+      tries++;
+    }
+    const med = await Medicine.create({ name, brand, expiryDate, description, serialNumber, createdBy: req.user._id });
+    res.status(201).json({ success: true, data: med });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// ==========================================
-// [PUT] Routes - Updating Data
-// ==========================================
-
-// 5. Update medicine details
-router.put("/update/:id", async (req, res) => {
+router.put('/update/:id', protect, async (req, res) => {
   try {
-    const { id } = req.params;
     const { name, brand, expiryDate } = req.body;
-
-    // Ensure the model name matches your Medicine model
-    await Medicine.findByIdAndUpdate(id, { name, brand, expiryDate });
-
-    res.json({ success: true, message: "Updated successfully" });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    await Medicine.findByIdAndUpdate(req.params.id, { name, brand, expiryDate });
+    res.json({ success: true, message: 'Updated successfully' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// ==========================================
-// [DELETE] Routes - Removing Data
-// ==========================================
-
-// 6. Delete a medicine
-router.delete("/delete/:id", async (req, res) => {
+router.delete('/delete/:id', protect, async (req, res) => {
   try {
     await Medicine.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: "Deleted successfully" });
+    res.json({ success: true, message: 'Deleted successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

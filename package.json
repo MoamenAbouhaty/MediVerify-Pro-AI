@@ -1,6 +1,7 @@
 {
-  "name": "mediverify-backend",
-  "version": "1.0.0",
+  "name": "mediverify-pro",
+  "version": "2.0.0",
+  "description": "WHO-grade pharmaceutical authentication and AI advisory system",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
@@ -11,11 +12,10 @@
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
+    "express-rate-limit": "^7.5.0",
     "groq-sdk": "^1.1.2",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^7.8.8",
-    "nanoid": "^3.3.11",
-    "node-fetch": "^3.3.2"
+    "mongoose": "^8.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

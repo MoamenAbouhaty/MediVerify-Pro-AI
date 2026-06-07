@@ -1,47 +1,40 @@
-// node-fetch is required for Node.js versions below 18
-// Node 18+ has fetch built-in, so this line is safe to keep either way
-const fetch = (...args) => import("node-fetch").then(({ default: f }) => f(...args));
-
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
-router.post("/register", async (req, res) => {
+router.post('/register', async (req, res) => {
   try {
     const { fullName, email, password } = req.body;
-    const existingUser = await User.findOne({ email });
-    if (existingUser)
-      return res
-        .status(400)
-        .json({ success: false, message: "Email already registered" });
-
+    if (!fullName || !email || !password) {
+      return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ success: false, message: 'Email already registered' });
+    }
     const user = await User.create({ fullName, email, password });
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
-
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.status(201).json({ success: true, token });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email }).select("+password");
-    if (!user || !(await user.comparePassword(password, user.password))) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid credentials" });
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password required' });
     }
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    const user = await User.findOne({ email }).select('+password');
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
     res.json({ success: true, token });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
