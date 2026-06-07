@@ -14,7 +14,7 @@
 
 | Dark Mode Interface | Light Mode Interface |
 | :---: | :---: |
-| ![Dark Mode](assets/DashboardDark.jpg) | ![Light Mode](assets/LightMode.jpg) |
+| ![Dark Mode](assets/DashboardDark.jpg) | ![Light Mode](assets/DashboardLight.jpg) |
 
 ---
 
