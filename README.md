@@ -191,6 +191,4 @@ npm start
 
 ---
 
-## 👨‍💻 Developed By
-
-**Moamen Abouhaty**
+## Developed By Moamen Abouhaty
