@@ -193,6 +193,4 @@ npm start
 
 ## 👨‍💻 Developed By
 
-**Momen Elsayed**
-- GitHub: [@MomenElsayedDev](https://github.com/MomenElsayedDev)
-- LinkedIn: [momen-elsayed-dev](https://www.linkedin.com/in/momen-elsayed-dev/)
+**Moamen Abouhaty**
