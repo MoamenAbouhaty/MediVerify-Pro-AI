@@ -1,4 +1,4 @@
-# 🛡️ MediVerify Pro
+# 🛡️ MediVerify-Pro AI
 ### **Advanced Medicine Authenticity & AI-Powered Pharmaceutical Management System**
 
 **MediVerify Pro** is a professional Full-Stack solution (MERN Architecture) designed to combat counterfeit medicine. It empowers medical administrators to manage pharmaceutical inventory and generate unique, secure serial numbers, while providing a public portal for consumers to instantly verify product authenticity and safety status — backed by a real-time AI Health Advisor powered by Groq LLaMA.
