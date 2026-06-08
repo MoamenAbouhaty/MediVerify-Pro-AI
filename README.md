@@ -6,6 +6,9 @@
 ---
 
 ## 📸 Project Showcases
+| ![Dark Mode](assets/logo.jpg) 
+
+---
 
 | Dark Mode Interface | Light Mode Interface |
 | :---: | :---: |
