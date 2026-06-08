@@ -6,7 +6,7 @@
 ---
 
 ## 📸 Project Showcases
-| ![Dark Mode](assets/logo.jpg) 
+![Dark Mode](assets/logo.jpg) 
 
 ---
 
