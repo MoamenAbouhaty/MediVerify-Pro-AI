@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MediVerify Pro | Pharmaceutical Authentication System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<div id="loader-screen">
+  <div class="loader-inner">
+    <div class="loader-ring"></div>
+    <div class="loader-ring r2"></div>
+    <div class="loader-ring r3"></div>
+    <svg class="loader-icon" viewBox="0 0 40 40" fill="none">
+      <path d="M20 4L6 10V20C6 28.8 12.4 37.2 20 40C27.6 37.2 34 28.8 34 20V10L20 4Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+      <path d="M14 20L18 24L26 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <p class="loader-text">Initializing secure environment<span class="dots"></span></p>
+  </div>
+</div>
+
+<canvas id="bg-canvas"></canvas>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <div class="nav-brand" onclick="showSection('home')">
+      <div class="brand-icon">
+        <svg viewBox="0 0 40 40" fill="none">
+          <path d="M20 4L6 10V20C6 28.8 12.4 37.2 20 40C27.6 37.2 34 28.8 34 20V10L20 4Z" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.4"/>
+          <path d="M14 20L18 24L26 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">MediVerify</span>
+        <span class="brand-tag">PRO</span>
+      </div>
+    </div>
+
+    <div class="nav-links">
+      <button class="nav-btn active" data-section="home" onclick="showSection('home')">Verify</button>
+      <button class="nav-btn" data-section="advisor" onclick="showSection('advisor')">AI Advisor</button>
+      <button class="nav-btn hidden" id="dashNavBtn" data-section="dashboard" onclick="showSection('dashboard')">Dashboard</button>
+    </div>
+
+    <div class="nav-actions">
+      <div class="status-dot"></div>
+      <button class="btn-outline" id="adminBtn" onclick="loginFlow()">Admin Portal</button>
+      <button class="btn-ghost hidden" id="logoutBtn" onclick="logout()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </button>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="icon-sun hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <section id="home" class="section active">
+    <div class="hero-section">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        WHO Certified Authentication Protocol
+      </div>
+      <h1 class="hero-title">
+        Stop Counterfeit<br/>
+        <span class="gradient-text">Medicine Now</span>
+      </h1>
+      <p class="hero-subtitle">Over 1 million hospitalizations annually from counterfeit pharmaceuticals. Verify your medicine's authenticity in under 3 seconds.</p>
+
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-num">10%</div>
+          <div class="stat-label">of global medicines are counterfeit</div>
+        </div>
+        <div class="stat-div"></div>
+        <div class="stat-item">
+          <div class="stat-num">1M+</div>
+          <div class="stat-label">deaths annually from fake drugs</div>
+        </div>
+        <div class="stat-div"></div>
+        <div class="stat-item">
+          <div class="stat-num">3s</div>
+          <div class="stat-label">to verify with MediVerify</div>
+        </div>
+      </div>
+
+      <div class="verify-card">
+        <div class="verify-card-header">
+          <div class="verify-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+          <div>
+            <h3>Authenticate Medicine</h3>
+            <p>Enter the serial code printed on the packaging</p>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>Serial Code</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <input type="text" id="serialInput" placeholder="MV-XXXX-XXXX" maxlength="14" oninput="formatSerial(this)" onkeydown="if(event.key==='Enter')verifyMed()"/>
+            <button class="scan-btn" onclick="startScan()" title="Scan QR Code">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="qr-scanner-area" class="hidden">
+          <div class="scanner-frame">
+            <video id="scanner-video" autoplay playsinline muted></video>
+            <div class="scanner-overlay">
+              <div class="corner tl"></div><div class="corner tr"></div>
+              <div class="corner bl"></div><div class="corner br"></div>
+              <div class="scan-line"></div>
+            </div>
+          </div>
+          <button class="btn-ghost-sm" onclick="stopScan()">Cancel Scan</button>
+        </div>
+
+        <button class="btn-primary full-width" onclick="verifyMed()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Authenticate Medicine
+        </button>
+
+        <div id="verify-result" class="hidden"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="advisor" class="section">
+    <div class="advisor-section">
+      <div class="section-header">
+        <div class="hero-badge">
+          <span class="badge-dot pulse"></span>
+          AI-Powered • Real-time Analysis
+        </div>
+        <h2 class="section-title">AI Medicine <span class="gradient-text">Advisor</span></h2>
+        <p class="section-subtitle">Describe your symptoms and get personalized medicine recommendations with safety warnings and dosage guidance.</p>
+      </div>
+
+      <div class="advisor-layout">
+        <div class="advisor-chat">
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-msg ai">
+              <div class="msg-avatar">AI</div>
+              <div class="msg-bubble">
+                Hello! I'm your AI medicine advisor. Describe your symptoms and I'll help you understand your options, check interactions, and provide safety guidance. <br/><br/>
+                <strong>Remember:</strong> Always consult a licensed physician before taking any medication.
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <textarea id="symptomInput" placeholder="Describe your symptoms (e.g., headache, fever, nausea for 2 days...)" rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendSymptoms();}"></textarea>
+            <button class="btn-send" onclick="sendSymptoms()" title="Send">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="advisor-sidebar">
+          <div class="sidebar-card">
+            <h4>Bulk Medicine Generator</h4>
+            <p>Generate 10 verified medicines instantly with AI health data</p>
+            <button class="btn-primary full-width" id="generateBtn" onclick="generateBulkMedicines()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Generate 10 Medicines
+            </button>
+            <div id="generateProgress" class="hidden">
+              <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+              <p class="progress-label" id="progressLabel">Generating...</p>
+            </div>
+            <div id="generateResult" class="hidden generate-result"></div>
+          </div>
+
+          <div class="sidebar-card">
+            <h4>Quick Checks</h4>
+            <div class="quick-chips">
+              <button class="chip" onclick="quickSymptom('headache and fever')">Headache & Fever</button>
+              <button class="chip" onclick="quickSymptom('cough and sore throat')">Cough & Cold</button>
+              <button class="chip" onclick="quickSymptom('stomach pain and nausea')">Stomach Pain</button>
+              <button class="chip" onclick="quickSymptom('allergic reaction itching')">Allergy</button>
+              <button class="chip" onclick="quickSymptom('muscle pain and joint inflammation')">Pain Relief</button>
+              <button class="chip" onclick="quickSymptom('anxiety and insomnia')">Sleep & Anxiety</button>
+            </div>
+          </div>
+
+          <div class="sidebar-card warning-card">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <p>AI recommendations are for informational purposes only. Always consult a qualified healthcare professional before taking any medication.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="dashboard" class="section">
+    <div class="dashboard-section">
+      <div class="dash-header">
+        <div>
+          <h2 class="section-title">Control <span class="gradient-text">Dashboard</span></h2>
+          <p class="section-subtitle">Manage and monitor your pharmaceutical registry</p>
+        </div>
+        <button class="btn-outline" onclick="loadMedicines()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.63-6.53"/></svg>
+          Refresh
+        </button>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-icon teal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="stat-card-body">
+            <div class="stat-card-num" id="totalCount">—</div>
+            <div class="stat-card-label">Total Registered</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon green">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="stat-card-body">
+            <div class="stat-card-num" id="activeCount">—</div>
+            <div class="stat-card-label">Active & Valid</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon red">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="stat-card-body">
+            <div class="stat-card-num" id="expiredCount">—</div>
+            <div class="stat-card-label">Expired</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-icon blue">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <div class="stat-card-body">
+            <div class="stat-card-num" id="todayCount">—</div>
+            <div class="stat-card-label">Added Today</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-layout">
+        <div class="add-med-card">
+          <h3>Register New Batch</h3>
+          <div class="form-group">
+            <label>Medicine Name</label>
+            <input type="text" id="mName" placeholder="e.g. Paracetamol 500mg" class="form-input"/>
+          </div>
+          <div class="form-group">
+            <label>Manufacturer</label>
+            <input type="text" id="mBrand" placeholder="Company name" class="form-input"/>
+          </div>
+          <div class="form-group">
+            <label>Expiry Date</label>
+            <input type="date" id="mExpiry" class="form-input"/>
+          </div>
+          <div class="form-group">
+            <label>Description / Leaflet</label>
+            <textarea id="mDesc" placeholder="Additional notes, dosage, warnings..." rows="3" class="form-input"></textarea>
+          </div>
+          <button class="btn-primary full-width" onclick="addNewMed()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Save & Generate Serial
+          </button>
+        </div>
+
+        <div class="table-card">
+          <div class="table-header">
+            <h3>Medicine Registry</h3>
+            <div class="search-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="searchInput" placeholder="Search by name or serial..." oninput="filterTable(this.value)"/>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="med-table">
+              <thead>
+                <tr>
+                  <th>Medicine</th>
+                  <th>Serial</th>
+                  <th>Expiry</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="medTableBody"></tbody>
+            </table>
+            <div id="tableLoader" class="table-loader hidden">
+              <div class="spinner"></div>
+              <p>Loading medicines...</p>
+            </div>
+            <div id="tableEmpty" class="table-empty hidden">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <p>No medicines registered yet</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div id="editModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Edit Medicine</h3>
+      <button class="modal-close" onclick="closeEditModal()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <input type="hidden" id="editId"/>
+    <div class="form-group">
+      <label>Medicine Name</label>
+      <input type="text" id="editName" class="form-input"/>
+    </div>
+    <div class="form-group">
+      <label>Manufacturer</label>
+      <input type="text" id="editBrand" class="form-input"/>
+    </div>
+    <div class="form-group">
+      <label>Expiry Date</label>
+      <input type="date" id="editExpiry" class="form-input"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="brand-icon small">
+        <svg viewBox="0 0 40 40" fill="none"><path d="M20 4L6 10V20C6 28.8 12.4 37.2 20 40C27.6 37.2 34 28.8 34 20V10L20 4Z" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.4"/><path d="M14 20L18 24L26 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <span>MediVerify Pro © 2026</span>
+    </div>
+    <div class="footer-links">
+      <a href="#">WHO Partnership</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">API Docs</a>
+      <a href="https://github.com/MomenElsayedDev" target="_blank">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
