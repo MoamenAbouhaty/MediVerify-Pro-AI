@@ -109,22 +109,10 @@
           <div class="input-wrapper">
             <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             <input type="text" id="serialInput" placeholder="MV-XXXX-XXXX" maxlength="14" oninput="formatSerial(this)" onkeydown="if(event.key==='Enter')verifyMed()"/>
-            <button class="scan-btn" onclick="startScan()" title="Scan QR Code">
+            <button class="scan-btn" onclick="startScanner('verify')" title="Scan Barcode / QR Code">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             </button>
           </div>
-        </div>
-
-        <div id="qr-scanner-area" class="hidden">
-          <div class="scanner-frame">
-            <video id="scanner-video" autoplay playsinline muted></video>
-            <div class="scanner-overlay">
-              <div class="corner tl"></div><div class="corner tr"></div>
-              <div class="corner bl"></div><div class="corner br"></div>
-              <div class="scan-line"></div>
-            </div>
-          </div>
-          <button class="btn-ghost-sm" onclick="stopScan()">Cancel Scan</button>
         </div>
 
         <button class="btn-primary full-width" onclick="verifyMed()">
@@ -258,6 +246,12 @@
       <div class="dash-layout">
         <div class="add-med-card">
           <h3>Register New Batch</h3>
+
+          <button class="btn-outline full-width" onclick="startScanner('register')" style="margin-bottom:18px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Scan Barcode / QR to Register
+          </button>
+
           <div class="form-group">
             <label>Medicine Name</label>
             <input type="text" id="mName" placeholder="e.g. Paracetamol 500mg" class="form-input"/>
@@ -317,6 +311,28 @@
 
 </main>
 
+<!-- Global QR / Barcode scanner modal - works from any active section -->
+<div id="scannerModal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Scan Code</h3>
+      <button class="modal-close" onclick="stopScanner()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="scanner-frame">
+      <div id="scanner-video"></div>
+      <div class="scanner-overlay">
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+        <div class="scan-line"></div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--text2);text-align:center;margin-top:10px;">Hold the code flat, well lit, and a few centimeters from the camera</p>
+    <button class="btn-ghost-sm" onclick="stopScanner()">Cancel Scan</button>
+  </div>
+</div>
+
 <div id="editModal" class="modal-overlay hidden">
   <div class="modal-card">
     <div class="modal-header">
@@ -348,23 +364,35 @@
 <div id="toast-container"></div>
 
 <footer>
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div class="brand-icon small">
-        <svg viewBox="0 0 40 40" fill="none"><path d="M20 4L6 10V20C6 28.8 12.4 37.2 20 40C27.6 37.2 34 28.8 34 20V10L20 4Z" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.4"/><path d="M14 20L18 24L26 16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-      <span>MediVerify Pro © 2026</span>
+    <div class="footer-content">
+
+        <div class="footer-logo">
+            <h3>MediVerify Pro</h3>
+            <p>AI-Powered Medicine Verification Platform</p>
+        </div>
+
+        <a href="https://github.com/MoamenAbouhaty"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="github-btn">
+
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 viewBox="0 0 24 24"
+                 fill="currentColor">
+                <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.09 3.29 9.4 7.86 10.93.58.11.79-.25.79-.56v-2.17c-3.2.69-3.88-1.38-3.88-1.38-.52-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.71.08-.71 1.16.08 1.77 1.19 1.77 1.19 1.03 1.76 2.7 1.25 3.36.95.1-.74.4-1.25.73-1.54-2.56-.29-5.25-1.28-5.25-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.05 0 0 .97-.31 3.17 1.18a10.9 10.9 0 015.78 0c2.2-1.49 3.17-1.18 3.17-1.18.62 1.59.23 2.76.11 3.05.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.26 5.68.41.35.77 1.04.77 2.1v3.11c0 .31.21.68.8.56A11.51 11.51 0 0023.5 12C23.5 5.65 18.35.5 12 .5z"/>
+            </svg>
+
+            GitHub
+        </a>
+
+        <div class="footer-copy">
+            © 2026 MediVerify Pro • All Rights Reserved
+        </div>
+
     </div>
-    <div class="footer-links">
-      <a href="#">WHO Partnership</a>
-      <a href="#">Privacy Policy</a>
-      <a href="#">API Docs</a>
-      <a href="https://github.com/MomenElsayedDev" target="_blank">GitHub</a>
-    </div>
-  </div>
 </footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
 <script src="script.js"></script>
 </body>
 </html>

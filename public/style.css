@@ -1260,40 +1260,66 @@ main {
 .toast.info .toast-dot { background: var(--accent); }
 .toast.warning .toast-dot { background: var(--amber); }
 
-footer {
-  position: relative;
-  z-index: 1;
-  border-top: 1px solid var(--border);
-  margin-top: 40px;
-  padding: 24px;
+footer{
+    margin-top:70px;
+    padding:50px 20px 35px;
+    border-top:1px solid var(--border);
+    background:rgba(255,255,255,.02);
+    backdrop-filter:blur(18px);
 }
 
-.footer-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.footer-content{
+    max-width:1100px;
+    margin:auto;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:22px;
+    text-align:center;
 }
 
-.footer-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: var(--text2);
+.footer-logo h3{
+    margin:0;
+    font-size:24px;
+    font-weight:700;
+    color:var(--text);
 }
 
-.footer-links { display: flex; gap: 24px; }
-
-.footer-links a {
-  font-size: 13px;
-  color: var(--text2);
-  text-decoration: none;
-  transition: color var(--transition);
+.footer-logo p{
+    margin-top:8px;
+    color:var(--text2);
+    font-size:14px;
 }
 
-.footer-links a:hover { color: var(--accent); }
+.github-btn{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 24px;
+    border:1px solid var(--border);
+    border-radius:999px;
+    text-decoration:none;
+    color:var(--text);
+    background:rgba(255,255,255,.04);
+    transition:.3s;
+}
+
+.github-btn svg{
+    width:22px;
+    height:22px;
+}
+
+.github-btn:hover{
+    transform:translateY(-3px);
+    color:var(--accent);
+    border-color:var(--accent);
+    box-shadow:0 10px 25px rgba(0,180,255,.2);
+}
+
+.footer-copy{
+    font-size:13px;
+    color:var(--text2);
+}
 
 #generateBtn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
 

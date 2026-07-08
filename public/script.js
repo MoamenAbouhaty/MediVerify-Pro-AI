@@ -1,6 +1,4 @@
 const API = '';
-let scanStream = null;
-let scanInterval = null;
 let allMedicines = [];
 
 window.addEventListener('load', () => {
@@ -157,7 +155,7 @@ async function verifyMed() {
   resultDiv.innerHTML = `<div style="display:flex;align-items:center;gap:10px;color:var(--text2)"><div class="spinner" style="width:20px;height:20px;border-width:2px;"></div><span>Authenticating...</span></div>`;
 
   try {
-    const res = await fetch(`/api/medicines/verify/${serial}`);
+    const res = await fetch(`/api/medicines/verify/${encodeURIComponent(serial)}`);
     const data = await res.json();
 
     if (data.success) {
@@ -199,43 +197,179 @@ async function verifyMed() {
   }
 }
 
-async function startScan() {
-  const area = document.getElementById('qr-scanner-area');
-  area.classList.remove('hidden');
-  try {
-    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-    const video = document.getElementById('scanner-video');
-    video.srcObject = scanStream;
-    video.play();
+/* =========================================================================
+   UNIFIED CAMERA SCANNER (reads both QR codes and 1D barcodes)
+   Used by two flows, controlled by "scanMode":
+     - 'verify'   -> public "Authenticate Medicine" scan (fills serialInput)
+     - 'register' -> admin dashboard scan-to-register flow
+   The scanner UI lives in a single global modal (#scannerModal) so it works
+   correctly no matter which section (home/dashboard) is currently active.
+========================================================================= */
 
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    scanInterval = setInterval(() => {
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        if (typeof jsQR !== 'undefined') {
-          const code = jsQR(imageData.data, imageData.width, imageData.height);
-          if (code && code.data) {
-            document.getElementById('serialInput').value = code.data;
-            stopScan();
-            verifyMed();
-          }
+let html5QrCode = null;
+let scanMode = 'verify';
+
+function openScannerModal() {
+  document.getElementById('scannerModal').classList.remove('hidden');
+}
+
+function closeScannerModal() {
+  document.getElementById('scannerModal').classList.add('hidden');
+}
+
+async function startScanner(mode) {
+  if (mode === 'register') {
+    const token = localStorage.getItem('token');
+    if (!token) { showToast('Please login first', 'warning'); return; }
+  }
+
+  scanMode = mode;
+  openScannerModal();
+
+  const config = {
+    fps: 10,
+    qrbox: { width: 250, height: 180 },
+    aspectRatio: 1.0,
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.QR_CODE,
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.CODE_93,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.ITF,
+      Html5QrcodeSupportedFormats.CODABAR
+    ],
+    // Ask for a higher-resolution video stream so thin barcode lines are
+    // sharp enough to decode (low-res streams are the #1 cause of "camera
+    // opens but never detects anything").
+    videoConstraints: {
+      facingMode: 'environment',
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
+    }
+  };
+
+  html5QrCode = new Html5Qrcode('scanner-video', { verbose: false });
+
+  try {
+    const cameras = await Html5Qrcode.getCameras();
+    if (!cameras || cameras.length === 0) {
+      showToast('No camera available on this device', 'error');
+      closeScannerModal();
+      return;
+    }
+
+    // Prefer the rear/back camera automatically when available
+    const backCam = cameras.find(c => /back|rear|environment/i.test(c.label));
+    const cameraId = backCam ? backCam.id : cameras[cameras.length - 1].id;
+
+    await html5QrCode.start(
+      cameraId,
+      config,
+      async (decodedText) => {
+        if (navigator.vibrate) navigator.vibrate(120); // haptic feedback on successful scan
+        await stopScanner();
+
+        if (scanMode === 'register') {
+          await handleScannedForRegistration(decodedText);
+        } else {
+          document.getElementById('serialInput').value = decodedText;
+          verifyMed();
         }
-      }
-    }, 200);
-  } catch {
-    area.classList.add('hidden');
-    showToast('Camera access denied', 'error');
+      },
+      () => { /* called continuously while no code is found - ignore */ }
+    );
+  } catch (err) {
+    console.error(err);
+    showToast('Could not access the camera. Please allow camera permission.', 'error');
+    closeScannerModal();
   }
 }
 
-function stopScan() {
-  if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
-  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
-  document.getElementById('qr-scanner-area').classList.add('hidden');
+async function stopScanner() {
+  if (html5QrCode) {
+    try {
+      const state = html5QrCode.getState();
+      if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
+        await html5QrCode.stop();
+      }
+      await html5QrCode.clear();
+    } catch (e) {
+      // camera was already stopped - ignore
+    }
+  }
+  closeScannerModal();
+}
+
+/* ---------------- Admin: scan-to-register a new medicine ---------------- */
+
+// Checks whether the scanned code already exists; if not, opens the
+// "register new medicine" form pre-filled with the scanned code.
+async function handleScannedForRegistration(code) {
+  try {
+    const res = await fetch(`/api/medicines/verify/${encodeURIComponent(code)}`);
+    const data = await res.json();
+
+    if (data.success) {
+      showToast(`This code is already registered: ${data.data.name}`, 'info');
+    } else {
+      openRegisterFormModal(code);
+    }
+  } catch {
+    showToast('An error occurred while checking the code', 'error');
+  }
+}
+
+function openRegisterFormModal(scannedCode) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `<div class="modal-card">
+    <div class="modal-header"><h3>Register New Medicine</h3><button class="modal-close" id="rc-close">✕</button></div>
+    <div class="form-group"><label>Scanned Code</label><input type="text" class="form-input" value="${scannedCode}" disabled/></div>
+    <div class="form-group"><label>Medicine Name</label><input type="text" id="rc-name" class="form-input" placeholder="Paracetamol 500mg"/></div>
+    <div class="form-group"><label>Manufacturer</label><input type="text" id="rc-brand" class="form-input" placeholder="Company name"/></div>
+    <div class="form-group"><label>Expiry Date</label><input type="date" id="rc-expiry" class="form-input"/></div>
+    <div class="form-group"><label>Description / Notes</label><textarea id="rc-desc" class="form-input"></textarea></div>
+    <div class="modal-actions"><button class="btn-ghost" id="rc-cancel">Cancel</button><button class="btn-primary" id="rc-submit">Register Medicine</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  overlay.querySelector('#rc-close').onclick = close;
+  overlay.querySelector('#rc-cancel').onclick = close;
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+  overlay.querySelector('#rc-submit').onclick = async () => {
+    const name = overlay.querySelector('#rc-name').value.trim();
+    const brand = overlay.querySelector('#rc-brand').value.trim();
+    const expiryDate = overlay.querySelector('#rc-expiry').value;
+    const description = overlay.querySelector('#rc-desc').value.trim();
+
+    if (!name || !expiryDate) { showToast('Medicine name and expiry date are required', 'warning'); return; }
+
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch('/api/medicines/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name, brand, expiryDate, description, serialNumber: scannedCode })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Medicine registered successfully — Code: ${data.data.serialNumber}`, 'success');
+        close();
+        loadMedicines();
+        loadStats();
+      } else {
+        showToast(data.message || 'Failed to register medicine', 'error');
+      }
+    } catch {
+      showToast('Server connection error', 'error');
+    }
+  };
 }
 
 async function sendSymptoms() {
