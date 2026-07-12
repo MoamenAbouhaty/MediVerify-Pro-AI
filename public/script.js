@@ -12,7 +12,23 @@ window.addEventListener('load', () => {
     showAdminUI();
     showSection('dashboard');
   }
+  const editModal = document.getElementById('editModal');
+  if (editModal) {
+    editModal.addEventListener('click', e => {
+      if (e.target === editModal) closeEditModal();
+    });
+  }
 });
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -139,7 +155,13 @@ function logout() {
 
 function formatSerial(input) {
   let val = input.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-  if (val.length > 2 && val.slice(0, 2) !== 'MV') val = 'MV' + val.slice(2);
+  // شيل أي بادئة MV أو حرف منها موجود مسبقًا عشان منكررهاش وإحنا بنكتب
+  if (val.startsWith('MV')) {
+    val = val.slice(2);
+  } else if (val.startsWith('M') || val.startsWith('V')) {
+    val = val.slice(1);
+  }
+  val = 'MV' + val;
   if (val.length > 2) val = val.slice(0, 2) + '-' + val.slice(2);
   if (val.length > 7) val = val.slice(0, 7) + '-' + val.slice(7);
   input.value = val.slice(0, 14);
@@ -168,9 +190,9 @@ async function verifyMed() {
         resultDiv.innerHTML = `
           <div class="result-title warn">⚠ Expired Medicine — Do Not Use</div>
           <div class="result-rows">
-            <div class="result-row"><span>Product</span><span>${med.name}</span></div>
-            <div class="result-row"><span>Manufacturer</span><span>${med.brand || 'N/A'}</span></div>
-            <div class="result-row"><span>Serial</span><span>${med.serialNumber}</span></div>
+            <div class="result-row"><span>Product</span><span>${escapeHtml(med.name)}</span></div>
+            <div class="result-row"><span>Manufacturer</span><span>${escapeHtml(med.brand || 'N/A')}</span></div>
+            <div class="result-row"><span>Serial</span><span>${escapeHtml(med.serialNumber)}</span></div>
             <div class="result-row"><span>Expired On</span><span style="color:var(--red)">${expiryStr}</span></div>
           </div>`;
       } else {
@@ -178,9 +200,9 @@ async function verifyMed() {
         resultDiv.innerHTML = `
           <div class="result-title ok">✓ Authentic — Safe to Use</div>
           <div class="result-rows">
-            <div class="result-row"><span>Product</span><span>${med.name}</span></div>
-            <div class="result-row"><span>Manufacturer</span><span>${med.brand || 'N/A'}</span></div>
-            <div class="result-row"><span>Serial</span><span>${med.serialNumber}</span></div>
+            <div class="result-row"><span>Product</span><span>${escapeHtml(med.name)}</span></div>
+            <div class="result-row"><span>Manufacturer</span><span>${escapeHtml(med.brand || 'N/A')}</span></div>
+            <div class="result-row"><span>Serial</span><span>${escapeHtml(med.serialNumber)}</span></div>
             <div class="result-row"><span>Expires On</span><span style="color:var(--green)">${expiryStr}</span></div>
             <div class="result-row"><span>Status</span><span style="color:var(--green)">WHO Compliant ✓</span></div>
           </div>`;
@@ -197,117 +219,89 @@ async function verifyMed() {
   }
 }
 
-/* =========================================================================
-   UNIFIED CAMERA SCANNER (reads both QR codes and 1D barcodes)
-   Used by two flows, controlled by "scanMode":
-     - 'verify'   -> public "Authenticate Medicine" scan (fills serialInput)
-     - 'register' -> admin dashboard scan-to-register flow
-   The scanner UI lives in a single global modal (#scannerModal) so it works
-   correctly no matter which section (home/dashboard) is currently active.
-========================================================================= */
+let codeReader = null;
+let scanMode = "verify";
 
-let html5QrCode = null;
-let scanMode = 'verify';
-
-function openScannerModal() {
-  document.getElementById('scannerModal').classList.remove('hidden');
-}
-
-function closeScannerModal() {
-  document.getElementById('scannerModal').classList.add('hidden');
-}
-
-async function startScanner(mode) {
-  if (mode === 'register') {
-    const token = localStorage.getItem('token');
-    if (!token) { showToast('Please login first', 'warning'); return; }
-  }
-
+async function startScanner(mode = "verify") {
   scanMode = mode;
   openScannerModal();
 
-  const config = {
-    fps: 10,
-    qrbox: { width: 250, height: 180 },
-    aspectRatio: 1.0,
-    formatsToSupport: [
-      Html5QrcodeSupportedFormats.QR_CODE,
-      Html5QrcodeSupportedFormats.EAN_13,
-      Html5QrcodeSupportedFormats.EAN_8,
-      Html5QrcodeSupportedFormats.CODE_128,
-      Html5QrcodeSupportedFormats.CODE_39,
-      Html5QrcodeSupportedFormats.CODE_93,
-      Html5QrcodeSupportedFormats.UPC_A,
-      Html5QrcodeSupportedFormats.UPC_E,
-      Html5QrcodeSupportedFormats.ITF,
-      Html5QrcodeSupportedFormats.CODABAR
-    ],
-    // Ask for a higher-resolution video stream so thin barcode lines are
-    // sharp enough to decode (low-res streams are the #1 cause of "camera
-    // opens but never detects anything").
-    videoConstraints: {
-      facingMode: 'environment',
-      width: { ideal: 1280 },
-      height: { ideal: 720 }
-    }
-  };
+  const container = document.getElementById("scanner-video");
+  container.innerHTML = `
+        <video
+            id="scannerCamera"
+            autoplay
+            muted
+            playsinline
+            style="
+                width:100%;
+                border-radius:12px;
+                background:#000;
+            ">
+        </video>
+    `;
 
-  html5QrCode = new Html5Qrcode('scanner-video', { verbose: false });
+  const video = document.getElementById("scannerCamera");
 
   try {
-    const cameras = await Html5Qrcode.getCameras();
-    if (!cameras || cameras.length === 0) {
-      showToast('No camera available on this device', 'error');
-      closeScannerModal();
-      return;
-    }
-
-    // Prefer the rear/back camera automatically when available
-    const backCam = cameras.find(c => /back|rear|environment/i.test(c.label));
-    const cameraId = backCam ? backCam.id : cameras[cameras.length - 1].id;
-
-    await html5QrCode.start(
-      cameraId,
-      config,
-      async (decodedText) => {
-        if (navigator.vibrate) navigator.vibrate(120); // haptic feedback on successful scan
-        await stopScanner();
-
-        if (scanMode === 'register') {
-          await handleScannedForRegistration(decodedText);
-        } else {
-          document.getElementById('serialInput').value = decodedText;
-          verifyMed();
+    codeReader = new ZXing.BrowserMultiFormatReader();
+    await codeReader.decodeFromVideoDevice(
+      null,
+      video,
+      (result, err) => {
+        if (result) {
+          const code = result.getText().trim();
+          stopScanner();
+          if (scanMode === "verify") {
+            document.getElementById("serialInput").value = code;
+            verifyMed();
+          } else {
+            handleScannedForRegistration(code);
+          }
         }
-      },
-      () => { /* called continuously while no code is found - ignore */ }
+      }
     );
-  } catch (err) {
-    console.error(err);
-    showToast('Could not access the camera. Please allow camera permission.', 'error');
-    closeScannerModal();
+  } catch (e) {
+    console.error("ZXing Error:", e);
+    showToast(e.message, "error");
+    stopScanner();
   }
+}
+
+function openScannerModal() {
+  document.getElementById("scannerModal").classList.remove("hidden");
+}
+
+function closeScannerModal() {
+  document.getElementById("scannerModal").classList.add("hidden");
 }
 
 async function stopScanner() {
-  if (html5QrCode) {
-    try {
-      const state = html5QrCode.getState();
-      if (state === Html5QrcodeScannerState.SCANNING || state === Html5QrcodeScannerState.PAUSED) {
-        await html5QrCode.stop();
-      }
-      await html5QrCode.clear();
-    } catch (e) {
-      // camera was already stopped - ignore
+  try {
+    if (codeReader) {
+      codeReader.reset();
+      codeReader = null;
     }
+
+    const video = document.getElementById("scannerCamera");
+    if (video && video.srcObject) {
+      video.srcObject.getTracks().forEach(track => {
+        track.stop();
+      });
+      video.srcObject = null;
+    }
+
+    const container = document.getElementById("scanner-video");
+    if (container) {
+      container.innerHTML = "";
+    }
+  } catch (error) {
+    console.error("Stop Scanner Error:", error);
   }
+
   closeScannerModal();
 }
 
-/* ---------------- Admin: scan-to-register a new medicine ---------------- */
-
-// Checks whether the scanned code already exists; if not, opens the
-// "register new medicine" form pre-filled with the scanned code.
 async function handleScannedForRegistration(code) {
   try {
     const res = await fetch(`/api/medicines/verify/${encodeURIComponent(code)}`);
@@ -328,7 +322,7 @@ function openRegisterFormModal(scannedCode) {
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `<div class="modal-card">
     <div class="modal-header"><h3>Register New Medicine</h3><button class="modal-close" id="rc-close">✕</button></div>
-    <div class="form-group"><label>Scanned Code</label><input type="text" class="form-input" value="${scannedCode}" disabled/></div>
+    <div class="form-group"><label>Scanned Code</label><input type="text" class="form-input" value="${escapeHtml(scannedCode)}" disabled/></div>
     <div class="form-group"><label>Medicine Name</label><input type="text" id="rc-name" class="form-input" placeholder="Paracetamol 500mg"/></div>
     <div class="form-group"><label>Manufacturer</label><input type="text" id="rc-brand" class="form-input" placeholder="Company name"/></div>
     <div class="form-group"><label>Expiry Date</label><input type="date" id="rc-expiry" class="form-input"/></div>
@@ -408,7 +402,7 @@ function addChatMsg(text, role) {
   div.className = `chat-msg ${role}`;
   div.innerHTML = `
     <div class="msg-avatar">${role === 'ai' ? 'AI' : 'You'}</div>
-    <div class="msg-bubble">${text.replace(/\n/g, '<br>')}</div>`;
+    <div class="msg-bubble">${escapeHtml(text).replace(/\n/g, '<br>')}</div>`;
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
   return div;
@@ -537,13 +531,16 @@ function renderTable(meds) {
   tbody.innerHTML = meds.map(med => {
     const expired = new Date(med.expiryDate) < new Date();
     const expStr = new Date(med.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const safeName = escapeHtml(med.name);
+    const safeBrand = escapeHtml(med.brand || '—');
+    const safeSerial = escapeHtml(med.serialNumber);
     return `<tr>
-      <td><div class="med-name">${med.name}</div><div class="med-brand">${med.brand || '—'}</div></td>
-      <td><span class="serial-code">${med.serialNumber}</span></td>
+      <td><div class="med-name">${safeName}</div><div class="med-brand">${safeBrand}</div></td>
+      <td><span class="serial-code">${safeSerial}</span></td>
       <td style="font-size:13px;color:var(--text2)">${expStr}</td>
       <td><span class="status-badge ${expired ? 'expired' : 'active'}">${expired ? 'Expired' : 'Active'}</span></td>
       <td><div class="table-actions">
-        <button class="action-btn" onclick="openEditModal('${med._id}','${med.name}','${med.brand || ''}','${med.expiryDate}')" title="Edit">
+        <button class="action-btn" onclick="openEditModalById('${med._id}')" title="Edit">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         </button>
         <button class="action-btn del" onclick="deleteMed('${med._id}')" title="Delete">
@@ -552,6 +549,12 @@ function renderTable(meds) {
       </div></td>
     </tr>`;
   }).join('');
+}
+
+function openEditModalById(id) {
+  const med = allMedicines.find(m => m._id === id);
+  if (!med) { showToast('Medicine not found', 'error'); return; }
+  openEditModal(med._id, med.name, med.brand || '', med.expiryDate);
 }
 
 function filterTable(query) {
@@ -636,32 +639,125 @@ async function submitEdit() {
   }
 }
 
-document.getElementById('editModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('editModal')) closeEditModal();
-});
+const THEMES = [
+  { id: 'dark',   name: 'Deep Space',  colors: ['#050a0f', '#00d4ff', '#00c896'] },
+  { id: 'light',  name: 'Daylight',    colors: ['#faf8f4', '#0077aa', '#1f2a24'] },
+  { id: 'ocean',  name: 'Ocean',       colors: ['#041016', '#1de9d6', '#0fb3a8'] },
+  { id: 'sunset', name: 'Sunset',      colors: ['#140a08', '#ff7a45', '#e85a2a'] },
+  { id: 'forest', name: 'Forest',      colors: ['#060f0b', '#4ade80', '#22a35a'] },
+  { id: 'nova',   name: 'Nova',        colors: ['#0b0714', '#c084fc', '#9b4fe8'] },
+  { id: 'mono',   name: 'Mono',        colors: ['#0a0a0a', '#ffffff', '#9a9a9a'] },
+  { id: 'slate',  name: 'Slate',       colors: ['#eef1f5', '#2563eb', '#16202e'] }
+];
 
-function toggleTheme() {
-  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
-  document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-  localStorage.setItem('theme', isDark ? 'light' : 'dark');
-  document.querySelector('.icon-moon').classList.toggle('hidden', !isDark);
-  document.querySelector('.icon-sun').classList.toggle('hidden', isDark);
-}
+const FONTS = [
+  { id: 'modern',        name: 'Modern (Default)', sample: 'Syne + DM Sans' },
+  { id: 'tech',          name: 'Tech',             sample: 'Space Grotesk + Inter' },
+  { id: 'editorial',     name: 'Editorial',        sample: 'Playfair Display + Lora' },
+  { id: 'friendly',      name: 'Friendly',         sample: 'Poppins + Nunito Sans' },
+  { id: 'minimal',       name: 'Minimal',          sample: 'Outfit + Manrope' },
+  { id: 'classic-arabic',name: 'Arabic Classic',   sample: 'Cairo + Tajawal' }
+];
 
 function applyTheme() {
-  const saved = localStorage.getItem('theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', saved);
-  if (saved === 'light') {
-    document.querySelector('.icon-moon').classList.add('hidden');
-    document.querySelector('.icon-sun').classList.remove('hidden');
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  const savedFont = localStorage.getItem('font') || 'modern';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  if (savedFont !== 'modern') document.documentElement.setAttribute('data-font', savedFont);
+  const isLightLike = ['light', 'slate'].includes(savedTheme);
+  document.querySelector('.icon-moon').classList.toggle('hidden', isLightLike);
+  document.querySelector('.icon-sun').classList.toggle('hidden', !isLightLike);
+}
+
+function toggleTheme() {
+  const current = localStorage.getItem('theme') || 'dark';
+  const isLightLike = ['light', 'slate'].includes(current);
+  const next = isLightLike ? 'dark' : 'light';
+  setTheme(next);
+}
+
+function setTheme(id) {
+  document.documentElement.setAttribute('data-theme', id);
+  localStorage.setItem('theme', id);
+  const isLightLike = ['light', 'slate'].includes(id);
+  document.querySelector('.icon-moon').classList.toggle('hidden', isLightLike);
+  document.querySelector('.icon-sun').classList.toggle('hidden', !isLightLike);
+  refreshAppearancePanel();
+}
+
+function setFont(id) {
+  if (id === 'modern') {
+    document.documentElement.removeAttribute('data-font');
+  } else {
+    document.documentElement.setAttribute('data-font', id);
   }
+  localStorage.setItem('font', id);
+  refreshAppearancePanel();
+}
+
+function refreshAppearancePanel() {
+  const panel = document.getElementById('appearancePanel');
+  if (!panel) return;
+  const currentTheme = localStorage.getItem('theme') || 'dark';
+  const currentFont = localStorage.getItem('font') || 'modern';
+  panel.querySelectorAll('.theme-swatch').forEach(el => {
+    el.classList.toggle('active', el.dataset.themeId === currentTheme);
+  });
+  panel.querySelectorAll('.font-option').forEach(el => {
+    el.classList.toggle('active', el.dataset.fontId === currentFont);
+  });
+}
+
+function openAppearancePanel() {
+  const currentTheme = localStorage.getItem('theme') || 'dark';
+  const currentFont = localStorage.getItem('font') || 'modern';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'appearancePanel';
+
+  const themeSwatches = THEMES.map(t => `
+    <div class="theme-swatch ${t.id === currentTheme ? 'active' : ''}" data-theme-id="${t.id}" onclick="setTheme('${t.id}')">
+      <div class="theme-swatch-preview" style="background:${t.colors[0]}">
+        <span class="theme-swatch-dot" style="background:${t.colors[1]}"></span>
+        <span class="theme-swatch-dot" style="background:${t.colors[2]}"></span>
+      </div>
+      <div class="theme-swatch-label">${t.name}</div>
+    </div>`).join('');
+
+  const fontOptions = FONTS.map(f => `
+    <div class="font-option ${f.id === currentFont ? 'active' : ''}" data-font-id="${f.id}" onclick="setFont('${f.id}')">
+      <div>
+        <div class="font-option-name">${f.name}</div>
+        <div class="font-option-sample">${f.sample}</div>
+      </div>
+      <svg class="font-option-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>`).join('');
+
+  overlay.innerHTML = `<div class="modal-card appearance-modal-card">
+    <div class="modal-header"><h3>Themes & Fonts</h3><button class="modal-close" id="ap-close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="appearance-group">
+      <div class="appearance-group-title">Color Theme</div>
+      <div class="theme-grid">${themeSwatches}</div>
+    </div>
+    <div class="appearance-group">
+      <div class="appearance-group-title">Font Pairing</div>
+      <div class="font-list">${fontOptions}</div>
+    </div>
+  </div>`;
+
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.querySelector('#ap-close').onclick = close;
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 }
 
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.innerHTML = `<div class="toast-dot"></div><span>${message}</span>`;
+  toast.innerHTML = `<div class="toast-dot"></div><span></span>`;
+  toast.querySelector('span').textContent = message;
   container.appendChild(toast);
   setTimeout(() => {
     toast.classList.add('fade-out');
@@ -687,7 +783,8 @@ function initCanvas() {
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const isDark = !['light', 'slate'].includes(theme);
     const particleColor = isDark ? '0,212,255' : '0,100,180';
 
     particles.forEach(p => {
